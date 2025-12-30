@@ -1,2 +1,2 @@
-# Albumtations
-Test program for albumtations.
+# Albumentations
+Test program for albumentations.
