@@ -147,3 +147,71 @@ cv2.destroyAllWindows
   2. The image to transform.
   3. The expression return a dictionary which includes the key named 'image'
 
+
+
+### Runnable argumentation:
+
+```python
+transform = A.Compose([
+        # Spatial transforms that affect bounding boxes
+        A.RandomSizedBBoxSafeCrop(height=args.imgsz, width=args.imgsz, erosion_rate=0.2, p=0.6),
+        A.OneOf(
+            [
+                A.HorizontalFlip(p=1.0),
+                A.SquareSymmetry(p=1.0),
+            ],
+            p=0.3,
+        ),
+        # A.CLAHE(clip_limit=(1, 4), tile_grid_size=(8, 8), p=0.1),
+        A.HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.3),
+        # A.OneOf(
+        #     [
+        #         A.ChannelShuffle(p=1.0),
+        #         A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1.0),
+        #     ],
+        #     p=0.3
+        # ),
+        A.Affine(
+            scale=(0.8, 1.2),
+            rotate=(-20, 20),
+            shear={"x": (-10, 10), "y": (-5, 5)},
+            p=0.3
+        ),
+        # A.Mosaic(
+        #     target_size=(args.imgsz,args.imgsz),
+        #     cell_shape=(args.imgsz,args.imgsz),
+        #     p=0.3
+        # ),
+        A.OneOf(
+            [
+                A.GaussNoise(std_range=(0.1, 0.2), p=1.0),
+                A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=1.0),
+                A.RandomSunFlare(flare_roi=(0.1, 0, 0.9, 0.3),
+                                 angle_range=(0.25, 0.75),
+                                 num_flare_circles_range=(5, 15),
+                                 src_radius=200,
+                                 src_color=(255, 200, 100),
+                                 method="physics_based",
+                                 p=1.0),
+                
+            ],
+            p=0.5,
+        ),
+        A.MotionBlur(
+            blur_limit=(7,13),
+            angle_range=(0, 120),
+            direction_range=(0.2, 0.5),
+            p=0.4
+        ),
+        # A.Normalize(
+        #     mean=(0,0,0),
+        #     std=(1,1,1),
+        #     max_pixel_value=255.0,
+        #     p=1.0
+        # ),
+    ], bbox_params=A.BboxParams(
+        format="yolo",  # YOLO format: [x_center, y_center, width, height] normalized
+        label_fields=["class_labels"]  # Field name for class labels
+    ))
+```
+
