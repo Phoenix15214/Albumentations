@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument('--data', type=str, required=True, help='.yaml file')
     parser.add_argument('--epochs', type=int, default=50, help='Training epochs')
     parser.add_argument('--imgsz', type=int, default=640, help='Image size')
+    parser.add_argument('--model-size', type=str, default='n', choices=['n', 's', 'm', 'l', 'x'])
     parser.add_argument('--batch', type=int, default=4, help='Batch size')
     parser.add_argument('--device', type=str, default='cuda', help='device')
     parser.add_argument('--workers', type=int, default=4, help='Workers')
@@ -141,12 +142,19 @@ def main():
             ],
             p=0.3
         ),
-        A.Affine(
-            scale=(0.8, 1.2),
-            rotate=(-15, 15),
-            # shear={"x": (-10, 10), "y": (-5, 5)},
-            p=0.3
-        ),
+        # A.Affine(
+        #     scale=(0.8, 1.2),
+        #     rotate=(-15, 15),
+        #     # shear={"x": (-10, 10), "y": (-5, 5)},
+        #     p=0.3
+        # ),
+        # A.Perspective(
+        #     scale=(0.1,0.2),
+        #     keep_size=True,
+        #     fit_output=False,
+        #     border_mode=cv2.BORDER_CONSTANT,
+        #     p=0.6
+        # ),
         # A.Mosaic(
         #     target_size=(args.imgsz,args.imgsz),
         #     cell_shape=(args.imgsz,args.imgsz),
@@ -163,6 +171,7 @@ def main():
                                  src_color=(255, 200, 100),
                                  method="physics_based",
                                  p=1.0),
+                A.ISONoise(color_shift=(0.01,0.05), intensity=(0.3,0.5),p=1.0),
                 
             ],
             p=0.3,
@@ -176,7 +185,7 @@ def main():
         # A.Normalize(
         #     mean=(0,0,0),
         #     std=(1,1,1),
-        #     max_pixel_value=255.0,
+        #     max_pixel_value=255,
         #     p=1.0
         # ),
     ], bbox_params=A.BboxParams(
@@ -202,7 +211,7 @@ def main():
     print("3. This confirms our custom SPATIAL augmentations are active!\n")
 
     # Initialize model
-    model = YOLO("yolo11n.pt")  # Using nano model for faster testing
+    model = YOLO(f'yolo11{args.model_size}.pt')  # Using nano model for faster testing
 
     # Train with custom spatial augmentations
     model.train(
