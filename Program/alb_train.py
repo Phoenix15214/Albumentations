@@ -99,6 +99,8 @@ class CustomTrainer(DetectionTrainer):
         self.__customize_albumentations_transforms(dataset)
         return dataset
 
+colors = [0, 30, 80, 117, 180, 255]
+
 def main():
     args = parse_args()
     # Set the target image size for training
@@ -108,24 +110,75 @@ def main():
     # Note the bbox_params - this is CRUCIAL for spatial transforms!
     transform = A.Compose([
         # Spatial transforms that affect bounding boxes
-        A.HorizontalFlip(p=0.5),  # 50% chance to flip horizontally
-        A.ShiftScaleRotate(
-            shift_limit=0.1,   # Shift by up to 10% of image size
-            scale_limit=0.2,   # Scale by ±20%
-            rotate_limit=30,   # Rotate by up to ±30 degrees
-            p=0.7              # Apply this transform 70% of the time
+        A.RandomSizedBBoxSafeCrop(height=args.imgsz, width=args.imgsz, erosion_rate=0.2, p=0.5),
+        A.OneOf(
+            [
+                A.HorizontalFlip(p=1.0),
+                A.SquareSymmetry(p=1.0),
+            ],
+            p=0.3,
         ),
+        # A.CLAHE(clip_limit=(1, 4), tile_grid_size=(8, 8), p=0.1),
         
-        # Color transforms (don't affect bboxes but enhance augmentation)
-        A.RandomBrightnessContrast(p=0.5),
-        A.HueSaturationValue(
-            hue_shift_limit=20,
-            sat_shift_limit=30, 
-            val_shift_limit=20,
-            p=0.5
+        A.OneOf([
+            A.ConstrainedCoarseDropout(
+                num_holes_range=(2,4),
+                hole_height_range=(0.1,0.3),
+                hole_width_range=(0.1,0.3),
+                bbox_labels=[1,2,3,4,5,6,7,8],
+                fill=f
+            )for f in colors
+        ], p=0.3),
+
+        A.HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.3),
+        A.OneOf(
+            [
+                A.ChannelShuffle(p=1.0),
+                A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1.0),
+            ],
+            p=0.3
         ),
+        A.Affine(
+            scale=(0.8, 1.2),
+            rotate=(-15, 15),
+            # shear={"x": (-10, 10), "y": (-5, 5)},
+            p=0.3
+        ),
+        # A.Mosaic(
+        #     target_size=(args.imgsz,args.imgsz),
+        #     cell_shape=(args.imgsz,args.imgsz),
+        #     p=0.3
+        # ),
+        A.OneOf(
+            [
+                A.GaussNoise(std_range=(0.1, 0.2), p=1.0),
+                A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=1.0),
+                A.RandomSunFlare(flare_roi=(0.1, 0, 0.9, 0.3),
+                                 angle_range=(0.25, 0.75),
+                                 num_flare_circles_range=(5, 15),
+                                 src_radius=200,
+                                 src_color=(255, 200, 100),
+                                 method="physics_based",
+                                 p=1.0),
+                
+            ],
+            p=0.3,
+        ),
+        A.MotionBlur(
+            blur_limit=(9,15),
+            angle_range=(0, 180),
+            direction_range=(0.2, 0.5),
+            p=0.3
+        ),
+        # A.Normalize(
+        #     mean=(0,0,0),
+        #     std=(1,1,1),
+        #     max_pixel_value=255.0,
+        #     p=1.0
+        # ),
     ], bbox_params=A.BboxParams(
         format="yolo",  # YOLO format: [x_center, y_center, width, height] normalized
+        min_visibility=0.3,
         label_fields=["class_labels"]  # Field name for class labels
     ))
 
