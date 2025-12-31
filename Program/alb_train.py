@@ -1,5 +1,6 @@
 import torch
 import albumentations as A
+import cv2
 
 from functools import partial
 
@@ -8,6 +9,8 @@ from ultralytics.data.augment import Albumentations as UltralyticsAlbumentations
 from ultralytics.models.yolo.detect.train import DetectionTrainer
 
 import argparse
+
+cv2.setNumThreads(0)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='YOLO Training')
